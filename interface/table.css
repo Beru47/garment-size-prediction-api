@@ -1,0 +1,25 @@
+.step5{
+    display: none;
+}
+
+table{
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td{
+    border: 1px solid #000000;
+    text-align: left;
+    padding: 8px;
+    cursor: pointer;
+    transition: .5s;
+}
+
+th{
+    background-color: #eeaaaa;
+}
+
+td:hover{
+    background-color: rgba(255, 255, 255, 0.718);
+}
