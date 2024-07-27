@@ -1,0 +1,26 @@
+user_id,1
+gender,0
+adult,1
+height_cm,163
+weight_kg,74
+morphology,8
+Head_Circumference,null
+Right_Elbow,null
+Biceps,null
+Waist_Circumference,null
+Chest_Circumference,null
+Chest_Base,null
+Right_Knee,null
+Left_Knee,null
+Right_Calf,null
+Left_Calf,null
+High_Hip,null
+Low_Hip,null
+Right_Thigh,null
+Right_Thigh_Widest,"null	"
+Left_Thigh,null
+Left_Thigh_Widest,null
+Shoulder_Width,null
+Arm_Length,null
+Trunk_Length,null
+Leg_Length,null
