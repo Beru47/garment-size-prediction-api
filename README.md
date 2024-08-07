@@ -13,8 +13,8 @@ Before you begin, make sure you have the following installed:
 
 1. **Clone the repository:**
    ```
-   git clone https://gitlab.com/Welyne-Dev/fit-size-measurement-prediction
-   cd Fit-size-measurement-prediction
+   git clone https://github.com/Beru47/APi-internship-wefizz
+   cd APi-internship-wefizz
    ```
 
 2. **Create a virtual environment:**
@@ -107,8 +107,5 @@ This configuration that you will find in main.py ensures that your FastAPI appli
    [http://localhost:8000/docs](http://localhost:8000/docs)
 
    This URL will redirect you to the Swagger UI, where you can interact with the API endpoints.
-"# decentralized-app" 
-"# Wefizz-api-deu-prediciton-du-taille-a-partir-de-la-marphologie-" 
-"# Wefizz-api-deu-prediciton-du-taille-a-partir-de-la-marphologie-" 
-"# Wefizz-api-deu-prediciton-du-taille-a-partir-de-la-marphologie-" 
-"# APi-internship-wefizz" 
+
+Haythem @ 
