@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base
 
 
 SQLALCHEMY_DATABASE_URL = "postgresql://postgres:***REMOVED***@localhost/api_db"
@@ -15,3 +16,4 @@ def get_db():
         yield db
     finally:
         db.close()
+        

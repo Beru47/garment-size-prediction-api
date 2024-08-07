@@ -1,9 +1,9 @@
-user_id,500
-gender,0
+user_id,1
+gender,1
 adult,1
-height_cm,163
-weight_kg,74
-morphology,8
+height_cm,170
+weight_kg,70
+morphology,v
 Head_Circumference,null
 Right_Elbow,null
 Biceps,null
