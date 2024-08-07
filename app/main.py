@@ -1,9 +1,13 @@
 from fastapi import Depends, FastAPI, status, HTTPException, UploadFile, File
 from . import models
 from .database import engine, get_db
+<<<<<<< HEAD
 from .utils import  get_table_info
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
+=======
+from sqlalchemy.orm import Session
+>>>>>>> 0f7c17036686660adfbbe85d8083e8ecebac0bc5
 import pandas as pd
 from io import StringIO
 from .ClientOPS import ClientOPS
@@ -25,8 +29,11 @@ origins = [
     "http://localhost"
 ]
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 0f7c17036686660adfbbe85d8083e8ecebac0bc5
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -35,6 +42,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+<<<<<<< HEAD
 @app.get("/check_client_table", tags=["Table Checks"])
 async def check_client_table(db: Session = Depends(get_db)):
     info = get_table_info(db, "client")
@@ -50,6 +58,8 @@ async def check_db(db: Session = Depends(get_db)):
     return {"tables": tables}
 
 
+=======
+>>>>>>> 0f7c17036686660adfbbe85d8083e8ecebac0bc5
 @app.get("/")
 async def root():
     return {"Data": "API started correctly!"}
@@ -62,6 +72,7 @@ async def add_clients(file: UploadFile = File(...), db: Session = Depends(get_db
     content = file.file.read().decode("utf-8")
     csv_data = StringIO(content)
     
+<<<<<<< HEAD
     try:
         df = pd.read_csv(csv_data, header=None)
         df = df.transpose()
@@ -80,6 +91,26 @@ async def add_clients(file: UploadFile = File(...), db: Session = Depends(get_db
         new_clients_measures_accuracy_orms = []
         new_clients_measures_prediction_orms = []
 
+=======
+    df = pd.read_csv(csv_data, header=None)
+    df = df.transpose()
+    df.columns = df.iloc[0]
+    df = df[1:]
+    df.reset_index(drop=True, inplace=True)
+
+    df = df.map(try_convert_to_float)
+    df.loc[df['morphology'] == 8.0, 'morphology'] = '8'
+    df['morphology'] = df['morphology'].astype(str)
+    
+    clientOPS = ClientOPS(df)
+
+    new_client_orms = []
+    new_clients_measures_orms = []
+    new_clients_measures_accuracy_orms = []
+    new_clients_measures_prediction_orms = []
+
+    try:
+>>>>>>> 0f7c17036686660adfbbe85d8083e8ecebac0bc5
         for client_model in clientOPS.new_clients:
             client_orm = models.ClientORM(**client_model.dict())
             new_client_orms.append(client_orm)
@@ -114,6 +145,7 @@ async def add_clients(file: UploadFile = File(...), db: Session = Depends(get_db
         for measures_prediction_orm in new_clients_measures_prediction_orms:
             db.refresh(measures_prediction_orm)
 
+<<<<<<< HEAD
         response_data = [client.__dict__ for client in new_client_orms]
         for data in response_data:
             data.pop('_sa_instance_state', None)  
@@ -122,10 +154,22 @@ async def add_clients(file: UploadFile = File(...), db: Session = Depends(get_db
 
     except Exception as e:
         print(f"An error occurred: {e}")  # Print the error for debugging
+=======
+    except Exception as e:
+>>>>>>> 0f7c17036686660adfbbe85d8083e8ecebac0bc5
         db.rollback()
         raise HTTPException(status_code=500, detail=f"An error occurred while processing the data: {str(e)}")
 
 
+<<<<<<< HEAD
+=======
+    response_data = [client.__dict__ for client in new_client_orms]
+    for data in response_data:
+        data.pop('_sa_instance_state', None)  
+
+    return {"data": response_data}
+
+>>>>>>> 0f7c17036686660adfbbe85d8083e8ecebac0bc5
 @app.get("/get_measures_predictions/{client_id}", tags=["Get Measures Predictions"])
 async def get_measures(client_id: int, db: Session = Depends(get_db)):
         client_measures_prediction = db.query(models.MeasurePredictionORM).filter(models.MeasurePredictionORM.user_id == client_id).first()

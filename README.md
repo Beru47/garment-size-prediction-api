@@ -108,4 +108,8 @@ This configuration that you will find in main.py ensures that your FastAPI appli
 
    This URL will redirect you to the Swagger UI, where you can interact with the API endpoints.
 
+<<<<<<< HEAD
 Haythem @ 
+=======
+Haythem @ 
+>>>>>>> 0f7c17036686660adfbbe85d8083e8ecebac0bc5

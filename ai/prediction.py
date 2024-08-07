@@ -21,12 +21,16 @@ def predict(data):
     # print("Prepared Input Data:")
     # print(new_df)
 
+<<<<<<< HEAD
   
     model = joblib.load('C:/Users/hayth/OneDrive/Desktop/API wefizz/random_forest_model.pkl')
 
 
 
 
+=======
+    model = joblib.load('random_forest_model.pkl')
+>>>>>>> 0f7c17036686660adfbbe85d8083e8ecebac0bc5
     predicted_values = model.predict(new_df)
 
 
