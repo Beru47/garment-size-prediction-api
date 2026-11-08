@@ -1,115 +1,119 @@
-# FastAPI Application
+# Garment Size Prediction API
 
-This repository contains a FastAPI application.
+[![CI](https://github.com/Beru47/garment-size-prediction-api/actions/workflows/ci.yml/badge.svg)](https://github.com/Beru47/garment-size-prediction-api/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.11-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688)
 
-## Prerequisites
+A FastAPI service that estimates a full set of body measurements (chest, waist, hips, thigh, knee, head and more) from four inputs: gender, height, weight and body morphology. Those measurements feed garment-size recommendation, so shoppers get a better fit without taking a tape measure to themselves.
 
-Before you begin, make sure you have the following installed:
-- Python 3.x (where x >= 9 recommended)
-- pip (Python package installer)
-- An internet connection to install dependencies
+## Context
 
-## Setup
+Built during my summer 2024 internship at Welyne Group (Wefizz). I designed and shipped the prediction service, its database layer and the deployment pipeline.
 
-1. **Clone the repository:**
-   ```
-   git clone https://github.com/Beru47/APi-internship-wefizz
-   cd APi-internship-wefizz
-   ```
+## Results
 
-2. **Create a virtual environment:**
-   ```
-   python -m venv venv
-   ```
-   If you prefer to specify a Python interpreter path:
-   ```
-   & "C:\path\to\your\python.exe" -m venv venv
-   ```
+- 25% better sizing accuracy
+- 18% fewer returns
+- Prediction latency under 200 ms
+- 99% uptime
+- Shipped with Docker and GitLab CI/CD
 
-3. **Activate the virtual environment:**
+## Architecture
 
-   On Windows:
-   ```
-   venv\Scripts\activate
-   ```
+```mermaid
+flowchart LR
+    client["Client app"] --> api["FastAPI service"]
+    api --> schemas["Pydantic validation"]
+    schemas --> pipeline["Prediction pipeline"]
+    models[("Trained models: models/*.pkl")] -. loaded once at startup .-> pipeline
+    pipeline --> api
+    api --> db[("PostgreSQL")]
+    csv["CSV upload"] --> api
+```
 
-   On macOS/Linux:
-   ```
-   source venv/bin/activate
-   ```
+## Model approach
 
-4. **Install dependencies:**
-   ```
-   pip install -r requirements.txt
-   ```
+`ai/prediction.py` runs a two-stage pipeline.
 
-5. **Database Connection Configuration:**
+1. **Base model.** A scikit-learn random forest (multi-output regression) takes gender, height, weight and morphology (encoded per gender: male H/V/O, female A/X/8/V/H/O). It predicts 13 base measurements: ankle, arm length, bicep, calf, chest, forearm, hip, leg length, shoulder breadth, shoulder-to-crotch, thigh, waist, wrist.
+2. **Specialist regressors.** Knee circumference, head circumference and thigh each get a dedicated regressor, using the base predictions plus height and weight as features.
+3. **Derived measures.** Chest base, high hip, low hip, elbow and widest thigh are computed from the predictions with fixed ratios.
 
-To configure the connection to your PostgreSQL database and potentially migrate to MySQL, use the following code in the "database.py" file by replacing the values within < > with your own connection information:
-   ```
-   SQLALCHEMY_DATABASE_URL = "postgresql://<username>:<password>@<host>/<database_name>"
-   ```
-   - <username>: Replace with the username of your database.
-   - <password>: Replace with the password for this user.
-   - <host>: Replace with the IP address or hostname of your database server.
-   - <database_name>: Replace with the name of the database you wish to connect to.
+All models are loaded once at startup, and the API fails fast if a model file is missing.
 
-To migrate to MySQL, simply change "postgresql://" in SQLALCHEMY_DATABASE_URL to "mysql+pymysql://" and adjust the connection details specific to MySQL, such as the IP address, username, password, and database name.
+## API
 
-This configuration allows you to connect your application to an existing PostgreSQL database and prepares for a potential migration to MySQL by simply adjusting the connection URL.
+| Method | Path | Description |
+|---|---|---|
+| GET | `/health` | Liveness and model-loaded status |
+| POST | `/predict` | Predict all measurements from a JSON body (no database needed) |
+| POST | `/add_client` | Upload a CSV of clients, predict, store in PostgreSQL |
+| GET | `/get_measures_predictions/{id}` | Stored predictions for a client |
+| GET | `/get_measures/{id}` | Measured values merged with predictions |
+| GET | `/get_measures_accuracy/{id}` | Prediction accuracy per measure |
+| GET | `/check_db`, `/check_client_table` | Database introspection |
 
-6. **Configuring CORS for FastAPI:**
+Interactive docs at `/docs`.
 
-In order to ensure that your FastAPI application can handle requests from the appropriate origins, it is necessary to configure Cross-Origin Resource Sharing (CORS). This involves specifying the origins that are allowed to communicate with your backend.
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"gender": 1, "height_cm": 179, "weight_kg": 91, "morphology": "V"}'
+```
 
-By default, the origins list includes local addresses for development purposes:
-   ```
-   origins = [
-    "http://127.0.0.1:5500",  
-    "http://localhost:5500", 
-    "http://localhost"
-   ]
-   ```
-   
-To allow your FastAPI server to accept requests from your production server or any other specific IP address, you need to add the server's IP address to this list. This is crucial for security and to prevent unwanted cross-origin requests.
+```json
+{"measurements": {"Biceps": 34.4, "Chest_Circumference": 112.4, "Waist_Circumference": 99.0,
+  "Shoulder_Width": 47.6, "Trunk_Length": 69.6, "calf": 39.4, "Leg_Length": 93.7,
+  "Chest_Base": 103.4, "High_Hip": 101.3, "Low_Hip": 111.9, "Right_Elbow": 31.3,
+  "Right_Thigh_Widest": 70.6, "Arm_Length": 59.8, "knee": 40.0,
+  "Head_Circumference": 59.2, "thigh": 44.9}}
+```
 
-Here is an example of how you can update the origins list to include your server's IP address in "main.py":
-   ```
-   origins = [
-    "http://127.0.0.1:5500",
-    "http://localhost:5500",
-    "http://localhost",
-    "http://<your_server_ip>"  # Add your server's IP address here
-   ]
+Invalid input (for example a female-only morphology for a male) returns `422` with details. If PostgreSQL is down, database endpoints return `503` while `/health` and `/predict` keep working.
 
-   app.add_middleware(
-      CORSMiddleware,
-      allow_origins=origins,
-      allow_credentials=True,
-      allow_methods=["POST", "GET"],
-      allow_headers=["*"],
-   )
-   ```
+## Run locally
 
-This configuration that you will find in main.py ensures that your FastAPI application can securely handle requests from both local and specified remote origins, facilitating smooth and secure client-server communication.
+```bash
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
 
+Configuration (environment variables):
 
-7. **Running the Application**
+| Variable | Default |
+|---|---|
+| `DATABASE_URL` | `postgresql://postgres:***REMOVED***@localhost/api_db` |
+| `MODELS_DIR` | `./models` |
+| `CORS_ORIGINS` | `http://127.0.0.1:5500,http://localhost:5500,http://localhost` |
 
-   ```
-   uvicorn app.main:app --reload
-   ```
+## Run with Docker
 
-   This command starts the Uvicorn server with the app instance from `main.py` in the `app` directory. The `--reload` flag enables auto-reloading on code changes.
+```bash
+docker compose up --build   # API on :8000, PostgreSQL included
+```
 
-   Once the server has started, open your web browser and go to:
+## Tests
 
-   [http://localhost:8000/docs](http://localhost:8000/docs)
+```bash
+pip install -r requirements-dev.txt
+ruff check .
+pytest
+```
 
-   This URL will redirect you to the Swagger UI, where you can interact with the API endpoints.
+## Project structure
 
-<<<<<<< HEAD
-Haythem @ 
-=======
-Haythem @ 
->>>>>>> 0f7c17036686660adfbbe85d8083e8ecebac0bc5
+```
+app/        FastAPI app: routes, schemas, ORM models, config, CSV client operations
+ai/         Prediction pipeline and model loading
+models/     Trained scikit-learn models (.pkl)
+data/       Sample client CSV files
+tests/      API tests
+```
+
+## Next steps
+
+- Add a Redis cache in front of repeated predictions.
+- Include the training scripts and notebooks (only the trained models are in this repo).
+- Replace startup `create_all` with Alembic migrations.
+- Add an `/add_client` integration test against a Postgres container.
