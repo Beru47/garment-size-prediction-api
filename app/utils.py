@@ -2,6 +2,7 @@
 from sqlalchemy import inspect
 from sqlalchemy.orm import Session
 
+
 def get_table_info(db: Session, table_name: str):
     inspector = inspect(db.bind)
     if table_name in inspector.get_table_names():

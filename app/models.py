@@ -1,7 +1,9 @@
-from .database import Base
-from sqlalchemy import Column, Integer, Boolean, Float, CHAR, SmallInteger
-from sqlalchemy.sql.sqltypes import TIMESTAMP
+from sqlalchemy import CHAR, Boolean, Column, Float, Integer, SmallInteger
 from sqlalchemy.sql.expression import text
+from sqlalchemy.sql.sqltypes import TIMESTAMP
+
+from .database import Base
+
 
 class ClientORM(Base):
 

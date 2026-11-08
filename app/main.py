@@ -1,17 +1,25 @@
-from fastapi import Depends, FastAPI, status, HTTPException, UploadFile, File
-from . import models
-from .database import engine, get_db
-<<<<<<< HEAD
-from .utils import  get_table_info
-from sqlalchemy.orm import Session
-from sqlalchemy import inspect
-=======
-from sqlalchemy.orm import Session
->>>>>>> 0f7c17036686660adfbbe85d8083e8ecebac0bc5
-import pandas as pd
+import logging
+from contextlib import asynccontextmanager
 from io import StringIO
-from .ClientOPS import ClientOPS
+
+import pandas as pd
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy import inspect
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import Session
+
+from ai import prediction
+
+from . import models, schemas
+from .client_ops import ClientOPS
+from .config import CORS_ORIGINS, MODELS_DIR
+from .database import engine, get_db
+from .utils import get_table_info
+
+logger = logging.getLogger("wefizz")
+
 
 def try_convert_to_float(value):
     try:
@@ -19,174 +27,129 @@ def try_convert_to_float(value):
     except ValueError:
         return value
 
-models.Base.metadata.create_all(bind = engine)
 
-app = FastAPI()
-
-origins = [
-    "http://127.0.0.1:5500",  
-    "http://localhost:5500", 
-    "http://localhost"
-]
-
-<<<<<<< HEAD
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    prediction.load_models(MODELS_DIR)  # fail fast if a model file is missing
+    try:
+        models.Base.metadata.create_all(bind=engine)
+    except OperationalError:
+        logger.warning("Database unreachable at startup; DB endpoints will return 503")
+    yield
 
 
-=======
->>>>>>> 0f7c17036686660adfbbe85d8083e8ecebac0bc5
+app = FastAPI(
+    title="Garment Size Prediction API",
+    description="Predicts body measurements (used for garment sizing) from gender, height, weight and morphology.",
+    lifespan=lifespan,
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["POST", "GET"],
     allow_headers=["*"],
 )
 
-<<<<<<< HEAD
+
+@app.exception_handler(OperationalError)
+async def db_unavailable(_, exc: OperationalError):
+    return JSONResponse(status_code=503, content={"detail": "Database unavailable"})
+
+
+@app.get("/")
+async def root():
+    return {"Data": "API started correctly!"}
+
+
+@app.get("/health", tags=["Health"])
+async def health():
+    ok = prediction.models_loaded()
+    return JSONResponse(
+        status_code=200 if ok else 503,
+        content={"status": "ok" if ok else "unavailable", "models_loaded": ok},
+    )
+
+
+@app.post("/predict", response_model=schemas.PredictResponse, tags=["Predict"])
+def predict(req: schemas.PredictRequest):
+    """Predict the full measurement set for one person (no database needed)."""
+    measurements = prediction.predict_all(req.model_dump())
+    return {"measurements": measurements}
+
+
 @app.get("/check_client_table", tags=["Table Checks"])
 async def check_client_table(db: Session = Depends(get_db)):
     info = get_table_info(db, "client")
     if info["exists"]:
         return {"table_name": "client", "columns": info["columns"]}
-    else:
-        raise HTTPException(status_code=404, detail="Table 'client' does not exist.")
+    raise HTTPException(status_code=404, detail="Table 'client' does not exist.")
+
 
 @app.get("/check_db")
 async def check_db(db: Session = Depends(get_db)):
-    inspector = inspect(db.bind)
-    tables = inspector.get_table_names()
-    return {"tables": tables}
+    return {"tables": inspect(db.bind).get_table_names()}
 
-
-=======
->>>>>>> 0f7c17036686660adfbbe85d8083e8ecebac0bc5
-@app.get("/")
-async def root():
-    return {"Data": "API started correctly!"}
 
 @app.post("/add_client", status_code=status.HTTP_201_CREATED, tags=["Add Client"])
 async def add_clients(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    if file.content_type != 'text/csv':
+    if file.content_type != "text/csv":
         raise HTTPException(status_code=400, detail="Invalid file format. Please upload a CSV file.")
 
-    content = file.file.read().decode("utf-8")
-    csv_data = StringIO(content)
-    
-<<<<<<< HEAD
+    csv_data = StringIO(file.file.read().decode("utf-8"))
+
     try:
-        df = pd.read_csv(csv_data, header=None)
-        df = df.transpose()
+        df = pd.read_csv(csv_data, header=None).transpose()
         df.columns = df.iloc[0]
-        df = df[1:]
-        df.reset_index(drop=True, inplace=True)
-    
+        df = df[1:].reset_index(drop=True)
         df = df.map(try_convert_to_float)
-        df.loc[df['morphology'] == 8.0, 'morphology'] = '8'
-        df['morphology'] = df['morphology'].astype(str)
-        
+        df.loc[df["morphology"] == 8.0, "morphology"] = "8"
+        df["morphology"] = df["morphology"].astype(str)
+
         clientOPS = ClientOPS(df)
 
-        new_client_orms = []
-        new_clients_measures_orms = []
-        new_clients_measures_accuracy_orms = []
-        new_clients_measures_prediction_orms = []
-
-=======
-    df = pd.read_csv(csv_data, header=None)
-    df = df.transpose()
-    df.columns = df.iloc[0]
-    df = df[1:]
-    df.reset_index(drop=True, inplace=True)
-
-    df = df.map(try_convert_to_float)
-    df.loc[df['morphology'] == 8.0, 'morphology'] = '8'
-    df['morphology'] = df['morphology'].astype(str)
-    
-    clientOPS = ClientOPS(df)
-
-    new_client_orms = []
-    new_clients_measures_orms = []
-    new_clients_measures_accuracy_orms = []
-    new_clients_measures_prediction_orms = []
-
-    try:
->>>>>>> 0f7c17036686660adfbbe85d8083e8ecebac0bc5
-        for client_model in clientOPS.new_clients:
-            client_orm = models.ClientORM(**client_model.dict())
-            new_client_orms.append(client_orm)
-            db.add(client_orm)
-        
-        for measures_model in clientOPS.new_clients_measures:
-            measures_orm = models.MeasureORM(**measures_model.dict())
-            new_clients_measures_orms.append(measures_orm)
-            db.add(measures_orm)
-        
-        for measures_accuracy_model in clientOPS.new_clients_measures_accuracy:
-            measures_accuracy_orm = models.MeasureAccuracyORM(**measures_accuracy_model.dict())
-            new_clients_measures_accuracy_orms.append(measures_accuracy_orm)
-            db.add(measures_accuracy_orm)
-        
-        for measures_prediction_model in clientOPS.new_clients_measures_prediction:
-            measures_prediction_orm = models.MeasurePredictionORM(**measures_prediction_model.dict())
-            new_clients_measures_prediction_orms.append(measures_prediction_orm)
-            db.add(measures_prediction_orm)
-        
+        client_orms = [models.ClientORM(**m.model_dump()) for m in clientOPS.new_clients]
+        other_orms = (
+            [models.MeasureORM(**m.model_dump()) for m in clientOPS.new_clients_measures]
+            + [models.MeasureAccuracyORM(**m.model_dump()) for m in clientOPS.new_clients_measures_accuracy]
+            + [models.MeasurePredictionORM(**m.model_dump()) for m in clientOPS.new_clients_measures_prediction]
+        )
+        db.add_all(client_orms + other_orms)
         db.commit()
 
-        for client_orm in new_client_orms:
-            db.refresh(client_orm)
-            
-        for measures_orm in new_clients_measures_orms:
-            db.refresh(measures_orm)
+        for orm in client_orms + other_orms:
+            db.refresh(orm)
 
-        for measures_accuracy_orm in new_clients_measures_accuracy_orms:
-            db.refresh(measures_accuracy_orm)
-            
-        for measures_prediction_orm in new_clients_measures_prediction_orms:
-            db.refresh(measures_prediction_orm)
-
-<<<<<<< HEAD
-        response_data = [client.__dict__ for client in new_client_orms]
+        response_data = [dict(c.__dict__) for c in client_orms]
         for data in response_data:
-            data.pop('_sa_instance_state', None)  
-
+            data.pop("_sa_instance_state", None)
         return {"data": response_data}
 
+    except OperationalError:
+        raise
     except Exception as e:
-        print(f"An error occurred: {e}")  # Print the error for debugging
-=======
-    except Exception as e:
->>>>>>> 0f7c17036686660adfbbe85d8083e8ecebac0bc5
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"An error occurred while processing the data: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"An error occurred while processing the data: {e}")
 
 
-<<<<<<< HEAD
-=======
-    response_data = [client.__dict__ for client in new_client_orms]
-    for data in response_data:
-        data.pop('_sa_instance_state', None)  
+def _row_or_404(db: Session, orm, client_id: int) -> dict:
+    row = db.query(orm).filter(orm.user_id == client_id).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Client not found")
+    return {k: v for k, v in row.__dict__.items() if k != "_sa_instance_state"}
 
-    return {"data": response_data}
 
->>>>>>> 0f7c17036686660adfbbe85d8083e8ecebac0bc5
 @app.get("/get_measures_predictions/{client_id}", tags=["Get Measures Predictions"])
-async def get_measures(client_id: int, db: Session = Depends(get_db)):
-        client_measures_prediction = db.query(models.MeasurePredictionORM).filter(models.MeasurePredictionORM.user_id == client_id).first()
-        if client_measures_prediction is None:
-            raise HTTPException(status_code=404, detail="Client not found")
-        return {"Measures Prediction": client_measures_prediction.__dict__}
+async def get_measures_predictions(client_id: int, db: Session = Depends(get_db)):
+    return {"Measures Prediction": _row_or_404(db, models.MeasurePredictionORM, client_id)}
+
 
 @app.get("/get_measures/{client_id}", tags=["Get Measures Corrected"])
 async def get_measures(client_id: int, db: Session = Depends(get_db)):
-        client_measures = db.query(models.MeasureORM).filter(models.MeasureORM.user_id == client_id).first()
-        if client_measures is None:
-            raise HTTPException(status_code=404, detail="Client not found")
-        return {"Measures": client_measures.__dict__}
+    return {"Measures": _row_or_404(db, models.MeasureORM, client_id)}
+
 
 @app.get("/get_measures_accuracy/{client_id}", tags=["Get Measures Accuracy"])
-async def get_measures(client_id: int, db: Session = Depends(get_db)):
-        client_measures_accuracy = db.query(models.MeasureAccuracyORM).filter(models.MeasureAccuracyORM.user_id == client_id).first()
-        if client_measures_accuracy is None:
-            raise HTTPException(status_code=404, detail="Client not found")
-        return {"Measures Accuracy": client_measures_accuracy.__dict__}
+async def get_measures_accuracy(client_id: int, db: Session = Depends(get_db)):
+    return {"Measures Accuracy": _row_or_404(db, models.MeasureAccuracyORM, client_id)}
