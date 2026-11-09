@@ -58,15 +58,11 @@ Interactive docs at `/docs`.
 ```bash
 curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \
-  -d '{"gender": 1, "height_cm": 179, "weight_kg": 91, "morphology": "V"}'
+  -d '{"gender": 1, "height_cm": 170, "weight_kg": 70, "morphology": "V"}'
 ```
 
 ```json
-{"measurements": {"Biceps": 34.4, "Chest_Circumference": 112.4, "Waist_Circumference": 99.0,
-  "Shoulder_Width": 47.6, "Trunk_Length": 69.6, "calf": 39.4, "Leg_Length": 93.7,
-  "Chest_Base": 103.4, "High_Hip": 101.3, "Low_Hip": 111.9, "Right_Elbow": 31.3,
-  "Right_Thigh_Widest": 70.6, "Arm_Length": 59.8, "knee": 40.0,
-  "Head_Circumference": 59.2, "thigh": 44.9}}
+{"measurements": {"Biceps": 30.5, "Chest_Circumference": 100.2, "Waist_Circumference": 87.8, "thigh": 42.2, "Shoulder_Width": 43.4, "Trunk_Length": 65.5, "calf": 36.2, "Leg_Length": 88.6, "Chest_Base": 92.2, "High_Hip": 93.5, "Low_Hip": 103.4, "Right_Elbow": 29.1, "Right_Thigh_Widest": 65.9, "knee": 36.7, "Arm_Length": 56.8, "Head_Circumference": 57.0}}
 ```
 
 Invalid input (for example a female-only morphology for a male) returns `422` with details. If PostgreSQL is down, database endpoints return `503` while `/health` and `/predict` keep working.
