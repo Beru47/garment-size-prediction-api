@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 
-VALID = {"gender": 1, "height_cm": 179, "weight_kg": 91, "morphology": "V"}
+VALID = {"gender": 1, "height_cm": 170, "weight_kg": 70, "morphology": "V"}
 
 
 @pytest.fixture(scope="module")
