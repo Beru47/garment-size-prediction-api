@@ -4,7 +4,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:***REMOVED***@localhost/api_db")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost/api_db")
 MODELS_DIR = Path(os.getenv("MODELS_DIR", ROOT / "models"))
 CORS_ORIGINS = [
     o.strip()

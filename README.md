@@ -83,7 +83,7 @@ Configuration (environment variables):
 
 | Variable | Default |
 |---|---|
-| `DATABASE_URL` | `postgresql://postgres:***REMOVED***@localhost/api_db` |
+| `DATABASE_URL` | `postgresql://postgres:postgres@localhost/api_db` |
 | `MODELS_DIR` | `./models` |
 | `CORS_ORIGINS` | `http://127.0.0.1:5500,http://localhost:5500,http://localhost` |
 

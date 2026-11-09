@@ -3,7 +3,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ***REMOVED***
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: api_db
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -15,7 +15,7 @@ services:
   api:
     build: .
     environment:
-      DATABASE_URL: postgresql://postgres:***REMOVED***@db/api_db
+      DATABASE_URL: postgresql://postgres:postgres@db/api_db
     ports:
       - "8000:8000"
     depends_on:
